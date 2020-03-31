@@ -34,16 +34,11 @@ object Main:
     case String :> rest =>
       Handler[rest]
 
-  type Foo[X] = X match
-    case String => Int
+  def simplest: IO[SomeResponse] = IO(SomeResponse())
 
-  def foo[Foo[String]] = "HAH"
+  def testSimplest0: Handler[CREATED[JSON, SomeResponse]] = simplest
 
-  //def simplest: IO[SomeResponse] = IO(SomeResponse())
-
-  //def testSimplest0: Handler[CREATED[JSON, SomeResponse]] = simplest
-
-  //def testSimplest1: Handler["v1" :> CREATED[JSON, SomeResponse]] = simplest
+  def testSimplest1: Handler["v1" :> CREATED[JSON, SomeResponse]] = simplest
 
   //def simple: UUID => IO[SomeResponse] =
   //  _ => IO(SomeResponse())
