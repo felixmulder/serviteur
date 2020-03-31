@@ -10,10 +10,10 @@ final case class CREATED[ContentTypes, ResponseBody]()
 final case class OK[ContentTypes, ResponseBody]()
 final case class JSON()
 
-type Handler[API] = Private.Handler[API]
+type Handler[API] = Handler.Go[API]
 
-object Private {
-  type Handler[API] = API match
+private[API] object Handler {
+  type Go[API] = API match
     case prev :> last =>
       HandlerAux[prev, HandlerSingle[last]]
     case _ =>
