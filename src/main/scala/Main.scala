@@ -74,7 +74,7 @@ object Main:
       :> CREATED[JSON, SomeResponse]
 
   def createTransaction: Handler[CreateTransaction] =
-    (uuid: UUID) => (body: SomeRequestBody) => IO(SomeResponse())
+    uuid => body => IO(SomeResponse())
 
   // Request response
   case class SomeRequestBody()
