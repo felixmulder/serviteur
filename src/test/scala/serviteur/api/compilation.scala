@@ -47,7 +47,7 @@ object advanced:
   type API =
     CreateTransaction :<|> DeleteTransaction
 
-  def api: CreateTransaction :<|> DeleteTransaction =
+  def api: API =
     :<|>(createTransaction, deleteTransaction)
 
 // Request response
