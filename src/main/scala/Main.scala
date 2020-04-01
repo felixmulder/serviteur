@@ -1,4 +1,5 @@
 import java.util.UUID
+import cats.effect.IO
 
 object Main:
 
@@ -66,24 +67,16 @@ object Main:
 
   type CreateTransaction =
     GET
-      :> "v1"
-      :> "transactions"
       :> PathParam[UUID]
-      :> "other"
       :> RequestBody[SomeRequestBody]
       :> CREATED[JSON, SomeResponse]
 
   def createTransaction: Handler[CreateTransaction] =
-    uuid => body => IO(SomeResponse())
+    uuid  => body => IO(SomeResponse())
 
   // Request response
   case class SomeRequestBody()
   case class SomeResponse()
-
-  class IO[A](unsafePerformIO: () => A)
-  object IO {
-    def apply[A](a: => A) = new IO(() => a)
-  }
 
   def main(args: Array[String]): Unit =
     if true then

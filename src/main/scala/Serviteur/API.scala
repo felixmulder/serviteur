@@ -1,5 +1,7 @@
 package Serviteur.API
 
+import cats.effect.IO
+
 /** A binder for APIs, used as a separator same as Servant's operator */
 case class :>[+A, +B]()
 
@@ -11,6 +13,30 @@ final case class RequestBody[A]()
 
 /** A type representing that the endpoint is a `GET` */
 final case class GET()
+
+/** A type representing that the endpoint is a `HEAD` */
+final case class HEAD()
+
+/** A type representing that the endpoint is a `POST` */
+final case class POST()
+
+/** A type representing that the endpoint is a `PUT` */
+final case class PUT()
+
+/** A type representing that the endpoint is a `DELETE` */
+final case class DELETE()
+
+/** A type representing that the endpoint is a `CONNECT` */
+final case class CONNECT()
+
+/** A type representing that the endpoint is a `OPTIONS` */
+final case class OPTIONS()
+
+/** A type representing that the endpoint is a `TRACE` */
+final case class TRACE()
+
+/** A type representing that the endpoint is a `PATCH` */
+final case class PATCH()
 
 /** A type representing that the CREATED 201 status will be returned along with
  *  the `ContentType` and `ResponseBody`
@@ -30,7 +56,8 @@ final case class JSON()
  *  As an example:
  *
  *  ```
- *  type GetPony = "pony" :> PathParam[PonyId] :> OK[JSON, Option[Pony]]
+ *  type GetPony =
+ *    GET :> "pony" :> PathParam[PonyId] :> OK[JSON, Option[Pony]]
  *
  *  def getPony: Handler[GetPony] =
  *    (id: PonyId) => IO {
@@ -71,16 +98,15 @@ private[API] object Handler:
           HandlerAux[prev, param => Next]
         case RequestBody[body] =>
           HandlerAux[prev, body => Next]
-    case GET =>
-      Next
-    case (String & Singleton) =>
-      Next
     case PathParam[param] =>
       param => Next
     case RequestBody[body] =>
       body => Next
-
-class IO[A](unsafePerformIO: () => A)
-
-object IO:
-  def apply[A](a: => A) = new IO(() => a)
+    case GET => Next
+    case HEAD => Next
+    case POST => Next
+    case PUT => Next
+    case DELETE => Next
+    case CONNECT => Next
+    case OPTIONS => Next
+    case (String & Singleton) => Next
