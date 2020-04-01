@@ -2,37 +2,37 @@ package serviteur.api.compilation
 
 import cats.effect.IO
 import java.util.UUID
-import org.junit.Assert._
-import org.junit.Test
-
 import serviteur.api._
 
-def simplest: IO[SomeResponse] = IO(SomeResponse())
+object simplest:
+  def response: IO[SomeResponse] = IO(SomeResponse())
 
-def testSimplest0: Handler[CREATED[JSON, SomeResponse]] = simplest
+  def testSimplest0: Handler[CREATED[JSON, SomeResponse]] = response
 
-def testSimplest1: Handler["v1" :> CREATED[JSON, SomeResponse]] = simplest
+  def testSimplest1: Handler["v1" :> CREATED[JSON, SomeResponse]] = response
 
+object simple:
+  def uuidToIO: UUID => IO[SomeResponse] =
+    _ => IO(SomeResponse())
 
-def simple: UUID => IO[SomeResponse] =
-  _ => IO(SomeResponse())
+  def test0: Handler[PathParam[UUID] :> CREATED[JSON, SomeResponse]] = uuidToIO
 
-def test0: Handler[PathParam[UUID] :> CREATED[JSON, SomeResponse]] = simple
+  def test1: Handler["v1" :> PathParam[UUID] :> CREATED[JSON, SomeResponse]] = uuidToIO
 
-def test1: Handler["v1" :> PathParam[UUID] :> CREATED[JSON, SomeResponse]] = simple
+  def test2: Handler[GET :> "v1" :> PathParam[UUID] :> CREATED[JSON, SomeResponse]] = uuidToIO
 
-def test2: Handler[GET :> "v1" :> PathParam[UUID] :> CREATED[JSON, SomeResponse]] = test3
+  // This test hihglights the fact that the `:>` operator is left associative
+  def test3: Handler[((GET :> "v1") :> PathParam[UUID]) :> CREATED[JSON, SomeResponse]] = uuidToIO
 
-def test3: Handler[((GET :> "v1") :> PathParam[UUID]) :> CREATED[JSON, SomeResponse]] = simple
+object advanced:
+  type CreateTransaction =
+    GET
+      :> PathParam[UUID]
+      :> RequestBody[SomeRequestBody]
+      :> CREATED[JSON, SomeResponse]
 
-type CreateTransaction =
-  GET
-    :> PathParam[UUID]
-    :> RequestBody[SomeRequestBody]
-    :> CREATED[JSON, SomeResponse]
-
-def createTransaction: Handler[CreateTransaction] =
-  uuid  => body => IO(SomeResponse())
+  def createTransaction: Handler[CreateTransaction] =
+    uuid  => body => IO(SomeResponse())
 
 // Request response
 case class SomeRequestBody()
