@@ -27,14 +27,14 @@ object simple:
 object advanced:
   type CreateTransaction =
     POST
-      :> Header["Idempotency-Key", String]
+      :> Header["Idempotency-Key", IdempotencyKey]
       :> "transactions"
       :> PathParam[UUID]
       :> RequestBody[SomeRequestBody]
       :> CREATED[JSON, SomeResponse]
 
   def createTransaction: Handler[CreateTransaction] =
-    str => uuid => body => IO(SomeResponse())
+    idempotencyKey => uuid => body => IO(SomeResponse())
 
   type DeleteTransaction =
     DELETE
@@ -54,3 +54,4 @@ object advanced:
 // Request response
 case class SomeRequestBody()
 case class SomeResponse()
+opaque type IdempotencyKey = String
