@@ -26,13 +26,29 @@ object simple:
 
 object advanced:
   type CreateTransaction =
-    GET
+    POST
+      :> "transactions"
       :> PathParam[UUID]
       :> RequestBody[SomeRequestBody]
       :> CREATED[JSON, SomeResponse]
 
   def createTransaction: Handler[CreateTransaction] =
-    uuid  => body => IO(SomeResponse())
+    uuid => body => IO(SomeResponse())
+
+  type DeleteTransaction =
+    DELETE
+      :> "transactions"
+      :> PathParam[UUID]
+      :> OK[JSON, Unit]
+
+  def deleteTransaction: Handler[DeleteTransaction] =
+    (uuid: UUID) => IO.unit // annotation on UUID just to assert no trickz
+
+  type API =
+    CreateTransaction :<|> DeleteTransaction
+
+  def api: CreateTransaction :<|> DeleteTransaction =
+    :<|>(createTransaction, deleteTransaction)
 
 // Request response
 case class SomeRequestBody()

@@ -5,6 +5,9 @@ import cats.effect.IO
 /** A binder for APIs, used as a separator same as Servant's operator */
 case class :>[+A, +B]()
 
+/** Combinator for combining different endpoint handlers into one API */
+case class :<|>[A, B](left: Handler[A], right: Handler[B])
+
 /** A type representing a path parameter */
 final case class PathParam[A]()
 
