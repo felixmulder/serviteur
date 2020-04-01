@@ -1,4 +1,4 @@
-package Serviteur.API
+package serviteur.api
 
 import cats.effect.IO
 
@@ -65,9 +65,9 @@ final case class JSON()
  *    }
  *  ```
  */
-type Handler[API] = Handler.Go[API]
+type Handler[API] = handler.Go[API]
 
-private[API] object Handler:
+private[api] object handler:
 
   // Starter for Handler reduction:
   type Go[API] = API match
