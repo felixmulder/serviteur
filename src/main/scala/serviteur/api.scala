@@ -3,10 +3,13 @@ package serviteur.api
 import cats.effect.IO
 
 /** A binder for APIs, used as a separator same as Servant's operator */
-case class :>[+A, +B]()
+case class :>[A, B]()
 
 /** Combinator for combining different endpoint handlers into one API */
 case class :<|>[A, B](left: Handler[A], right: Handler[B])
+
+/** A type representing a header */
+final case class Header[Name, A]()
 
 /** A type representing a path parameter */
 final case class PathParam[A]()
@@ -87,6 +90,8 @@ private[api] object handler:
       IO[response]
     case PathParam[param] =>
       param
+    case Header[_, header] =>
+      header
     case RequestBody[body] =>
       body
 
@@ -97,12 +102,16 @@ private[api] object handler:
       last match
         case (String & Singleton) =>
           HandlerAux[prev, Next]
+        case Header[_, header] =>
+          HandlerAux[prev, header => Next]
         case PathParam[param] =>
           HandlerAux[prev, param => Next]
         case RequestBody[body] =>
           HandlerAux[prev, body => Next]
     case PathParam[param] =>
       param => Next
+    case Header[_, header] =>
+      header => Next
     case RequestBody[body] =>
       body => Next
     case GET => Next
