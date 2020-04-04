@@ -5,8 +5,6 @@ import cats.effect.IO
 /** A binder for APIs, used as a separator same as Servant's operator */
 final class :>[A, B](val first: A, val rest: Handler[B])
 
-type :/[A, B] = :>[A, B]
-
 /** Combinator for combining different endpoint handlers into one API */
 final case class :<|>[A, B](left: Handler[A], right: Handler[B])
 

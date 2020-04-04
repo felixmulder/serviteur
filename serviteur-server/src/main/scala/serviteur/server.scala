@@ -15,12 +15,21 @@ given [L, R](using L: HandleRequest[Handler[L]], R: HandleRequest[Handler[R]]) a
     L.handleRequest(req, handler.left) orElse
     R.handleRequest(req, handler.right)
 
-given [API](using API: HandleRequest[Handler[API]]) as HandleRequest[GET :/ API]:
-  def handleRequest(req: Request, h: GET :/ API): Option[IO[Response]] =
+given [API](using API: HandleRequest[Handler[API]]) as HandleRequest[GET :> API]:
+  def handleRequest(req: Request, h: GET :> API): Option[IO[Response]] =
     if req.method == RequestMethod.GET then
       API.handleRequest(req, h.rest)
     else
       None
+
+trait PathParamFromUrl[A]:
+  def getParam(req: Request): Option[(Request, A)]
+
+given PathParamFromUrl[String]:
+  def getParam(req: Request) =
+    req.reversePathParts match
+      case (x :: xs) => Option((req.copy(reversePathParts = xs), x))
+      case _ => None
 
 given [C, R](using R: MimeRender[C, R]) as HandleRequest[Handler[CREATED[C, R]]]:
   def handleRequest(req: Request, h: Handler[CREATED[C, R]]) =
@@ -38,7 +47,7 @@ given MimeRender[JSON, Unit]:
 
 final case class Request(
   method: RequestMethod,
-  pathParts: List[String],
+  reversePathParts: List[String],
   headers: List[Header],
   body: Body,
 )
@@ -81,8 +90,17 @@ private val exampleRequest = Request(
   Body.EmptyBody,
 )
 
-private val exampleHandler =
-  summon[HandleRequest[Handler[CREATED[JSON, Unit]]]]
-    .handleRequest(exampleRequest, handler)
+private val exampleHandler0 =
+  serveAPI[CREATED[JSON, Unit]](IO.unit, exampleRequest)
 
-private val handler: Handler[CREATED[JSON, Unit]] = IO.unit
+private val exampleHandler1 =
+  serveAPI[GET :> CREATED[JSON, Unit]](IO.unit, exampleRequest)
+
+private val handler2: Handler[PathParam[String] :> CREATED[JSON, Unit]] =
+  s => IO.unit
+
+//private val exampleHandler2 =
+//  serveAPI[PathParam[String] :> CREATED[JSON, Unit]](handler2, exampleRequest)
+
+//private val exampleHandler3 =
+//  serveAPI[GET :> PathParam[String] :> CREATED[JSON, Unit]]((s: String) => IO.unit, exampleRequest)
