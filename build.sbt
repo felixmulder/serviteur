@@ -5,6 +5,7 @@ lazy val root = project
   .in(file("."))
   .aggregate(
     `serviteur-api`,
+    `serviteur-server`,
   )
 
 lazy val `serviteur-api` = project
@@ -15,6 +16,19 @@ lazy val `serviteur-api` = project
     coreDependencies ++
     coreTestDependencies ++
     Seq.empty
+  )
+
+lazy val `serviteur-server` = project
+  .in(file("serviteur-server"))
+  .settings(
+    clearOnWatch ++
+    dottySettings ++
+    coreDependencies ++
+    coreTestDependencies ++
+    Seq.empty
+  )
+  .dependsOn(
+    `serviteur-api`,
   )
 
 // -----------------------------------------------------------------------------

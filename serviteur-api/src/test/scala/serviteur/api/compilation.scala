@@ -4,14 +4,14 @@ import cats.effect.IO
 import java.util.UUID
 import serviteur.api._
 
-object simplest:
+private object simplest:
   def response: IO[SomeResponse] = IO(SomeResponse())
 
   def testSimplest0: Handler[CREATED[JSON, SomeResponse]] = response
 
   def testSimplest1: Handler["v1" :> CREATED[JSON, SomeResponse]] = response
 
-object simple:
+private object simple:
   def uuidToIO: UUID => IO[SomeResponse] =
     _ => IO(SomeResponse())
 
@@ -24,7 +24,7 @@ object simple:
   // This test hihglights the fact that the `:>` operator is left associative
   def test3: Handler[((GET :> "v1") :> PathParam[UUID]) :> CREATED[JSON, SomeResponse]] = uuidToIO
 
-object advanced:
+private object advanced:
   type CreateTransaction =
     POST
       :> Header["Idempotency-Key", IdempotencyKey]
@@ -52,6 +52,6 @@ object advanced:
     :<|>(createTransaction, deleteTransaction)
 
 // Request response
-case class SomeRequestBody()
-case class SomeResponse()
-opaque type IdempotencyKey = String
+private case class SomeRequestBody()
+private case class SomeResponse()
+private opaque type IdempotencyKey = String
