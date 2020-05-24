@@ -6,6 +6,17 @@ lazy val root = project
   .aggregate(
     `serviteur-api`,
     `serviteur-server`,
+    `serviteur-http-types`,
+  )
+
+lazy val `serviteur-http-types` = project
+  .in(file("serviteur-http-types"))
+  .settings(
+    clearOnWatch ++
+    dottySettings ++
+    coreDependencies ++
+    coreTestDependencies ++
+    Seq.empty
   )
 
 lazy val `serviteur-api` = project
