@@ -35,7 +35,7 @@ lazy val `serviteur-server` = project
 //  Common settings
 // -----------------------------------------------------------------------------
 val dottyVersion =
-  "0.24.0-bin-20200331-7a28eef-NIGHTLY"
+  "0.24.0-bin-20200426-1be5c23-NIGHTLY"
 
 val dottySettings = Seq(
   version := "0.1.0",
