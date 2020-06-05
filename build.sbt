@@ -40,13 +40,14 @@ lazy val `serviteur-server` = project
   )
   .dependsOn(
     `serviteur-api`,
+    `serviteur-http-types`,
   )
 
 // -----------------------------------------------------------------------------
 //  Common settings
 // -----------------------------------------------------------------------------
 val dottyVersion =
-  "0.25.0-bin-20200523-5358651-NIGHTLY"
+  "0.25.0-bin-20200603-cc8d6c3-NIGHTLY"
 
 val dottySettings = Seq(
   version := "0.1.0",
