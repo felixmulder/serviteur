@@ -1,18 +1,36 @@
 package serviteur.server
 
+import cats.effect.IO
+import cats.implicits._
+import cats.{Applicative, Functor}
+import java.net.URLDecoder
+import scala.language.implicitConversions
 import serviteur.api._
 import serviteur.http._
 import serviteur.http.status._
-import cats.effect.IO
-import cats.Functor
-import cats.implicits._
-import scala.language.implicitConversions
 
 def serveAPI[F[_], API](
   handler: Handler[F, API],
   req: Request,
 )(using H: HasServer[F, Handler[F, API]]): F[Option[Response]] =
   H.handleRequest(handler, req)
+
+trait FromRequest[A]:
+  def fromRequest(req: Request): Either[String, A]
+
+trait FromHttpApiData[A]:
+  def parsePathParam(pathPart: String): Either[String, A]
+
+given FromHttpApiData[String]:
+  def parsePathParam(pathPart: String) =
+    Right(URLDecoder.decode(pathPart, "UTF-8"))
+
+given [A, B](using FromHttpApiData: FromHttpApiData[A])
+as FromRequest[PathParam[A]]:
+  def fromRequest(req: Request) =
+    req.path match
+      case x :: _ => FromHttpApiData.parsePathParam(x).map(PathParam(_))
+      case Nil => Left("Couldn't parse path param from empty path")
 
 trait ToResponseCode[A]:
   def toResponseCode: Status
@@ -50,16 +68,33 @@ given [F[_], A](using TR: ToResponse[F, F[A]], F: Functor[F]) as HasServer[F, F[
   def handleRequest(fa: F[A], req: Request): F[Option[Response]] =
     TR.toResponse(fa).map(Some(_))
 
-given [F[_], A, B](using HS: HasServer[F, F[B]], TR: ToResponse[F, F[B]]) as HasServer[F, A => F[B]]:
-  def handleRequest(f: A => F[B], req: Request): F[Option[Response]] = ???
+given [F[_], A, B](
+  using H: HasServer[F, F[B]],
+        R: ToResponse[F, F[B]],
+        P: FromRequest[PathParam[A]],
+        F: Applicative[F]
+)
+as HasServer[F, Handler[F, PathParam[A] :> CREATED[JSON, B]]]:
+  def handleRequest(f: A => F[B], req: Request): F[Option[Response]] =
+    P.fromRequest(req) match
+      case Right(a) =>
+        H.handleRequest(f(a.param), req.copy(path = req.path.tail))
+      case Left(_) =>
+        F.pure(None) // TODO: should this be reported?
 
 // FIXME Move to test module
 private object simple:
-  val toRes: ToResponse[IO, Handler[IO, CREATED[JSON, Int]]] =
-    summon[ToResponse[IO, Handler[IO, CREATED[JSON, Int]]]]
+  summon[ToResponse[IO, Handler[IO, CREATED[JSON, Int]]]]
+  summon[HasServer[IO, Handler[IO, CREATED[JSON, Int]]]]
+  summon[HasServer[IO, Handler[IO, PathParam[String] :> CREATED[JSON, Int]]]]
+  summon[HasServer[IO, Handler[IO, GET :> PathParam[String] :> CREATED[JSON, Int]]]]
 
-  val hasServerCreated: HasServer[IO, Handler[IO, CREATED[JSON, Int]]] =
-    summon[HasServer[IO, Handler[IO, CREATED[JSON, Int]]]]
+  // Hmm - this shows the issue of not carrying the type along witht the resolution
+  //
+  // In this case the `HasServer` should not be based on handler, but keep an
+  // internal type that reduces. That way we can carry the types and properly
+  // match on path parts like "boats"
+  summon[HasServer[IO, Handler[IO, GET :> "boats" :> PathParam[String] :> CREATED[JSON, Int]]]]
 
 
 // FIXME Remove me!

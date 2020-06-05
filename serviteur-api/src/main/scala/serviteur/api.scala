@@ -12,7 +12,7 @@ final case class :<|>[A, B](left: A, right: B)
 final case class Header[Name, A]()
 
 /** A type representing a path parameter */
-final case class PathParam[A]()
+final case class PathParam[A](param: A)
 
 /** A type representing a request body */
 final case class RequestBody[A]()

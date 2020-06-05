@@ -10,7 +10,8 @@ opaque type QueryItem = (String, Option[String])
 opaque type QueryParameters = List[QueryItem]
 
 /** Path */
-opaque type Path = List[String]
+type Path = List[String]
+
 
 /** Host */
 opaque type Host = String
