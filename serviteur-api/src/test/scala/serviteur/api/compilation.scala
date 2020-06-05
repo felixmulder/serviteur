@@ -7,22 +7,22 @@ import serviteur.api._
 private object simplest:
   def response: IO[SomeResponse] = IO(SomeResponse())
 
-  def testSimplest0: Handler[CREATED[JSON, SomeResponse]] = response
+  def testSimplest0: Handler[IO, CREATED[JSON, SomeResponse]] = response
 
-  def testSimplest1: Handler["v1" :> CREATED[JSON, SomeResponse]] = response
+  def testSimplest1: Handler[IO, "v1" :> CREATED[JSON, SomeResponse]] = response
 
 private object simple:
   def uuidToIO: UUID => IO[SomeResponse] =
     _ => IO(SomeResponse())
 
-  def test0: Handler[PathParam[UUID] :> CREATED[JSON, SomeResponse]] = uuidToIO
+  def test0: Handler[IO, PathParam[UUID] :> CREATED[JSON, SomeResponse]] = uuidToIO
 
-  def test1: Handler["v1" :> PathParam[UUID] :> CREATED[JSON, SomeResponse]] = uuidToIO
+  def test1: Handler[IO, "v1" :> PathParam[UUID] :> CREATED[JSON, SomeResponse]] = uuidToIO
 
-  def test2: Handler[GET :> "v1" :> PathParam[UUID] :> CREATED[JSON, SomeResponse]] = uuidToIO
+  def test2: Handler[IO, GET :> "v1" :> PathParam[UUID] :> CREATED[JSON, SomeResponse]] = uuidToIO
 
   // This test hihglights the fact that the `:>` operator is left associative
-  def test3: Handler[((GET :> "v1") :> PathParam[UUID]) :> CREATED[JSON, SomeResponse]] = uuidToIO
+  def test3: Handler[IO, ((GET :> "v1") :> PathParam[UUID]) :> CREATED[JSON, SomeResponse]] = uuidToIO
 
 private object advanced:
   type CreateTransaction =
@@ -33,7 +33,7 @@ private object advanced:
       :> RequestBody[SomeRequestBody]
       :> CREATED[JSON, SomeResponse]
 
-  def createTransaction: Handler[CreateTransaction] =
+  def createTransaction: Handler[IO, CreateTransaction] =
     idempotencyKey => uuid => body => IO(SomeResponse())
 
   type DeleteTransaction =
@@ -42,13 +42,13 @@ private object advanced:
       :> PathParam[UUID]
       :> OK[JSON, Unit]
 
-  def deleteTransaction: Handler[DeleteTransaction] =
+  def deleteTransaction: Handler[IO, DeleteTransaction] =
     (uuid: UUID) => IO.unit // annotation on UUID just to assert no trickz
 
   type API =
     CreateTransaction :<|> DeleteTransaction
 
-  def api: API =
+  def api: Handler[IO, API] =
     :<|>(createTransaction, deleteTransaction)
 
 // Request response

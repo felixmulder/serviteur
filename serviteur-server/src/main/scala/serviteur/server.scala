@@ -1,106 +1,71 @@
 package serviteur.server
 
-import cats.effect.IO
 import serviteur.api._
+import serviteur.http._
+import serviteur.http.status._
+import cats.effect.IO
+import cats.Functor
+import cats.implicits._
+import scala.language.implicitConversions
 
-def serveAPI[API](api: Handler[API], req: Request)(using H: HandleRequest[Handler[API]]): IO[Response] =
-  H.handleRequest(req, api) getOrElse
-    IO.pure(Response(Nil, Body.EmptyBody, Status.NOTFOUND))
+def serveAPI[F[_], API](
+  handler: Handler[F, API],
+  req: Request,
+)(using H: HasServer[F, Handler[F, API]]): F[Option[Response]] =
+  H.handleRequest(handler, req)
 
-trait HandleRequest[API]:
-  def handleRequest(req: Request, handler: API): Option[IO[Response]]
+trait ToResponseCode[A]:
+  def toResponseCode: Status
 
-given [L, R](using L: HandleRequest[Handler[L]], R: HandleRequest[Handler[R]]) as HandleRequest[L :<|> R]:
-  def handleRequest(req: Request, handler: L :<|> R): Option[IO[Response]] =
-    L.handleRequest(req, handler.left) orElse
-    R.handleRequest(req, handler.right)
+given [A, B] as ToResponseCode[CREATED[A, B]]:
+  def toResponseCode = Status.created
 
-given [API](using API: HandleRequest[Handler[API]]) as HandleRequest[GET :> API]:
-  def handleRequest(req: Request, h: GET :> API): Option[IO[Response]] =
-    if req.method == RequestMethod.GET then
-      API.handleRequest(req, h.rest)
-    else
-      None
+/** Render the body */
+trait MimeRender[ContentType, A]:
+  def mimeRender(a: A): ResponseBody
 
-trait PathParamFromUrl[A]:
-  def getParam(req: Request): Option[(Request, A)]
+given [A](using ToJSON: ToJSON[A]) as MimeRender[JSON, A]:
+  def mimeRender(a: A) =
+    ResponseBody.StringBody(ToJSON.encode(a))
 
-given PathParamFromUrl[String]:
-  def getParam(req: Request) =
-    req.reversePathParts match
-      case (x :: xs) => Option((req.copy(reversePathParts = xs), x))
-      case _ => None
+trait ToResponse[F[_], A]:
+  def toResponse(a: A): F[Response]
 
-given [C, R](using R: MimeRender[C, R]) as HandleRequest[Handler[CREATED[C, R]]]:
-  def handleRequest(req: Request, h: Handler[CREATED[C, R]]) =
-    Some(h.map(R.toResponse(Status.CREATED, _)))
+given [F[_], CT, A](
+  using C: ToResponseCode[CREATED[CT, A]],
+        M: MimeRender[CT, A],
+        F: Functor[F]
+) as ToResponse[F, Handler[F, CREATED[CT, A]]]:
+  def toResponse(fa: F[A]) =
+    fa.map(a => Response.Response(
+      headers = Map.empty,
+      body = M.mimeRender(a),
+      status = C.toResponseCode
+    ))
 
-trait MimeRender[C, A]:
-  def toResponse(status: Status, a: A): Response
+trait HasServer[F[_], ApiHandler]:
+  def handleRequest(handler: ApiHandler, req: Request): F[Option[Response]]
 
-given MimeRender[JSON, Unit]:
-  def toResponse(status: Status, a: Unit) = Response(
-    List(Header("Content-Type", "application/json")),
-    Body.EmptyBody,
-    status,
-  )
+given [F[_], A](using TR: ToResponse[F, F[A]], F: Functor[F]) as HasServer[F, F[A]]:
+  def handleRequest(fa: F[A], req: Request): F[Option[Response]] =
+    TR.toResponse(fa).map(Some(_))
 
-final case class Request(
-  method: RequestMethod,
-  reversePathParts: List[String],
-  headers: List[Header],
-  body: Body,
-)
+given [F[_], A, B](using HS: HasServer[F, F[B]], TR: ToResponse[F, F[B]]) as HasServer[F, A => F[B]]:
+  def handleRequest(f: A => F[B], req: Request): F[Option[Response]] = ???
 
-final case class Header(name: String, value: String)
+// FIXME Move to test module
+private object simple:
+  val toRes: ToResponse[IO, Handler[IO, CREATED[JSON, Int]]] =
+    summon[ToResponse[IO, Handler[IO, CREATED[JSON, Int]]]]
 
-enum Body:
-  case StringBody(value: String)
-  case EmptyBody
+  val hasServerCreated: HasServer[IO, Handler[IO, CREATED[JSON, Int]]] =
+    summon[HasServer[IO, Handler[IO, CREATED[JSON, Int]]]]
 
-final case class Response(
-  headers: List[Header],
-  body: Body,
-  status: Status,
-)
 
-enum RequestMethod:
-  case GET
-  case HEAD
-  case PUT
-  case DELETE
-  case CONNECT
-  case OPTIONS
-  case TRACE
-  case PATCH
+// FIXME Remove me!
+trait ToJSON[A]:
+  def encode(a: A): String
 
-enum Status(code: Int):
-  case OK       extends Status(200)
-  case CREATED  extends Status(201)
-  case NOTFOUND extends Status(404)
+given [A] as ToJSON[A]:
+  def encode(a: A) = a.toString
 
-// FIXME:
-//  These should be deleted and the lines in:
-//    `/serviteur-sever/src/test/scala/serviteur/server/compilation.scala`
-//  uncommented.
-private val exampleRequest = Request(
-  RequestMethod.GET,
-  Nil,
-  Nil,
-  Body.EmptyBody,
-)
-
-private val exampleHandler0 =
-  serveAPI[CREATED[JSON, Unit]](IO.unit, exampleRequest)
-
-private val exampleHandler1 =
-  serveAPI[GET :> CREATED[JSON, Unit]](IO.unit, exampleRequest)
-
-private val handler2: Handler[PathParam[String] :> CREATED[JSON, Unit]] =
-  s => IO.unit
-
-//private val exampleHandler2 =
-//  serveAPI[PathParam[String] :> CREATED[JSON, Unit]](handler2, exampleRequest)
-
-//private val exampleHandler3 =
-//  serveAPI[GET :> PathParam[String] :> CREATED[JSON, Unit]]((s: String) => IO.unit, exampleRequest)
