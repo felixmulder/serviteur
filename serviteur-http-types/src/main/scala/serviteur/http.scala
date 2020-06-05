@@ -15,12 +15,11 @@ final case class Request
   , queryParameters: QueryParameters
   )
 
-enum Response:
-  case Response
-    ( headers: Map[HeaderName, HeaderValue]
-    , body: ResponseBody
-    , status: Status
-    )
+final case class Response
+  ( headers: Map[HeaderName, HeaderValue]
+  , body: ResponseBody
+  , status: Status
+  )
 
 enum RequestBody:
   case NoRequestBody

@@ -55,7 +55,7 @@ given [F[_], CT, A](
         F: Functor[F]
 ) as ToResponse[F, Handler[F, CREATED[CT, A]]]:
   def toResponse(fa: F[A]) =
-    fa.map(a => Response.Response(
+    fa.map(a => Response(
       headers = Map.empty,
       body = M.mimeRender(a),
       status = C.toResponseCode
