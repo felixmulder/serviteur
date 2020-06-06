@@ -1,3 +1,5 @@
+![Build status](https://github.com/felixmulder/serviteur/workflows/Scala%20CI/badge.svg)
+
 # Serviteur
 Type level HTTP APIs for Scala 3
 
